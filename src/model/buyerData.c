@@ -3,10 +3,10 @@
 
 int writeBuyer(const char *filename, const Buyer *b) {
 
-    FILE *file = fopen(filename, "ab"); 
+    FILE *file = fopen(filename, "a"); 
     if (file == NULL) return 0;
 
-    fwrite(b, sizeof(Buyer), 1, file);
+    fprintf(file, "%d,%49s\n", b->id, b->name);
 
     fclose(file);
     return 1;
@@ -14,12 +14,12 @@ int writeBuyer(const char *filename, const Buyer *b) {
 
 int readBuyers(const char *filename) {
 
-    FILE *file = fopen(filename, "rb"); 
+    FILE *file = fopen(filename, "r"); 
     if (file == NULL) return 0;
 
     Buyer b;
 
-    while (fread(&b, sizeof(Buyer), 1, file)) {
+    while (fscanf(file, "%d,%49s", &b.id, b.name) == 2) {
         showBuyer(&b); 
     }
 

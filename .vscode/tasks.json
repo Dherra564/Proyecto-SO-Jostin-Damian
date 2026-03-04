@@ -11,19 +11,9 @@
                 "$gcc"
             ],
             "group": {
-                "kind": "build",
-                "isDefault": true
+                "kind": "build"
             },
-            "detail": "Builds full project (excluding Jostin.c)."
-        },
-        {
-            "type": "shell",
-            "label": "Run project",
-            "command": "./build/proyecto",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "dependsOn": "Build project"
+            "detail": "Compila el proyecto."
         },
         {
             "type": "shell",
@@ -35,7 +25,11 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "detail": "Builds full project and runs executable."
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compila y ejecuta el proyecto."
         }
     ],
     "version": "2.0.0"
