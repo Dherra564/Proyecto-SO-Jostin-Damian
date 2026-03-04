@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug proyecto",
+            "name": "Proyecto 1 c",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/proyecto",
@@ -10,10 +10,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
-            "internalConsoleOptions": "neverOpen",
+            "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -21,7 +19,8 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Build project"
+            "preLaunchTask": "Build project",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }
