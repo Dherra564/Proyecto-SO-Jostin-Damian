@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "controller/controller.h"
+#include "controller.h"
 
 int main() {
 

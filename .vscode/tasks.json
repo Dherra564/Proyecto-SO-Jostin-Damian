@@ -1,18 +1,11 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: gcc compilar archivo activo",
-            "command": "/usr/bin/gcc",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
-            ],
+            "type": "shell",
+            "label": "Build project",
+            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g src/controller/main.c src/controller/controller.c src/model/bovine.c src/model/bovinesData.c src/model/buyer.c src/model/buyerData.c src/view/ui.c -o build/proyecto -pthread",
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
@@ -21,7 +14,28 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Tarea generada por el depurador."
+            "detail": "Builds full project (excluding Jostin.c)."
+        },
+        {
+            "type": "shell",
+            "label": "Run project",
+            "command": "./build/proyecto",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "Build project"
+        },
+        {
+            "type": "shell",
+            "label": "Build and Run project",
+            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g src/controller/main.c src/controller/controller.c src/model/bovine.c src/model/bovinesData.c src/model/buyer.c src/model/buyerData.c src/view/ui.c -o build/proyecto -pthread && ./build/proyecto",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Builds full project and runs executable."
         }
     ],
     "version": "2.0.0"
