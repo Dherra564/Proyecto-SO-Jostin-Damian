@@ -31,3 +31,23 @@ int readBovine(const char *filename, Bovine *b) {
 
     return (result == 3) ? 1 : 0;  // 1 si leyó correctamente
 }
+
+int searchBovine(const char *filename, int id, Bovine *b) {
+    FILE *file = fopen(filename, "r");
+    
+    if (file == NULL) {
+        return 0;  // error
+    }
+    
+    Bovine temp;
+    while (fscanf(file, "%d,%f,%49s", &temp.id, &temp.weight, temp.estate) == 3) {
+        if (temp.id == id) {
+            *b = temp;
+            fclose(file);
+            return 1;  // Encontrado
+        }
+    }
+    
+    fclose(file);
+    return 0;  // No encontrado
+}

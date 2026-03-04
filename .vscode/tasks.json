@@ -3,7 +3,7 @@
         {
             "type": "shell",
             "label": "Build project",
-            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g -I src/ -I src/controller/ -I src/model/ -I src/view/ src/main.c src/controller/controller.c src/model/bovine.c src/model/bovinesData.c src/model/buyer.c src/model/buyerData.c src/view/ui.c -o build/proyecto -pthread",
+            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g -I src/ -I src/controller/ -I src/model/ -I src/data/ -I src/view/ src/main.c src/controller/controller.c src/model/bovine.c src/model/buyer.c src/model/purchase.c src/model/auction.c src/data/bovinesData.c src/data/buyerData.c src/data/purchaseData.c src/data/auctionData.c src/view/ui.c -o build/proyecto -pthread",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -18,7 +18,7 @@
         {
             "type": "shell",
             "label": "Build and Run project",
-            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g -I src/ -I src/controller/ -I src/model/ -I src/view/ src/main.c src/controller/controller.c src/model/bovine.c src/model/bovinesData.c src/model/buyer.c src/model/buyerData.c src/view/ui.c -o build/proyecto -pthread && ./build/proyecto",
+            "command": "mkdir -p build && gcc -fdiagnostics-color=always -g -I src/ -I src/controller/ -I src/model/ -I src/data/ -I src/view/ src/main.c src/controller/controller.c src/model/bovine.c src/model/buyer.c src/model/purchase.c src/model/auction.c src/data/bovinesData.c src/data/buyerData.c src/data/purchaseData.c src/data/auctionData.c src/view/ui.c -o build/proyecto -pthread && ./build/proyecto",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
