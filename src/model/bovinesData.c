@@ -3,13 +3,13 @@
 
 int writeBovine(const char *filename, const Bovine *b) {
 
-    FILE *file = fopen(filename, "ab");  // append binary
+    FILE *file = fopen(filename, "a");  // append text
 
     if (file == NULL) {
         return 0;  // error
     }
 
-    fwrite(b, sizeof(Bovine), 1, file);
+    fprintf(file, "%d,%.2f,%s\n", b->id, b->weight, b->estate);
 
     fclose(file);
 
@@ -19,15 +19,15 @@ int writeBovine(const char *filename, const Bovine *b) {
 
 int readBovine(const char *filename, Bovine *b) {
 
-    FILE *file = fopen(filename, "rb");  // read binary
+    FILE *file = fopen(filename, "r");  // read text
 
     if (file == NULL) {
         return 0;  // error
     }
 
-    size_t result = fread(b, sizeof(Bovine), 1, file);
+    int result = fscanf(file, "%d,%f,%49s", &b->id, &b->weight, b->estate);
 
     fclose(file);
 
-    return result;  // 1 si leyó correctamente
+    return (result == 3) ? 1 : 0;  // 1 si leyó correctamente
 }
