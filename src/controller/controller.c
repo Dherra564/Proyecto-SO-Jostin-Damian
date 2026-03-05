@@ -1,94 +1,105 @@
 #include <stdio.h>
 #include "controller.h"
-#include "../data/bovinesData.h"
-#include "../data/purchaseData.h"
-#include "../data/auctionData.h"
+#include "../data/dataManager.h"
 #include "../view/ui.h"
 #include <pthread.h>
 #include <stdlib.h>
-#include "../data/buyerData.h"
 #include <stdbool.h>
 
-// Estructura para pasar argumentos al hilo de estimacion de precio
+// Estructura para pasar argumentos al hilo
+typedef struct {
+    int bovineId;
+    float weight;
+    char estate[50];
+} BovineArgs;
+
+typedef struct {
+    int buyerId;
+    char name[50];
+} BuyerArgs;
+
+typedef struct {
+    int bovineId;
+    int buyerId;
+    float pricePerKilo;
+} PurchaseArgs;
+
 typedef struct {
     int bovineId;
     int buyerId;
     float pricePerKilo;
 } EstimatePriceArgs;
 
-
 void* saveBovine(void* args) {
-    Bovine *b = (Bovine*)args;
-    writeBovine("bovines.dat", b);
-    free(b);
+    BovineArgs *data = (BovineArgs*)args;
+    dataSaveBovineAsync(data->bovineId, data->weight, data->estate);
+    free(data);
     return NULL;
 }
 
-void * saveBuyer(void* args) {
-    Buyer *b = (Buyer*)args;
-    writeBuyer("buyers.dat", b);
-    free(b);
+void* saveBuyer(void* args) {
+    BuyerArgs *data = (BuyerArgs*)args;
+    dataSaveBuyerAsync(data->buyerId, data->name);
+    free(data);
     return NULL;
 }
 
 void createBovine() {
-
-    Bovine* b = malloc(sizeof(Bovine));
+    BovineArgs* data = malloc(sizeof(BovineArgs));
 
     printf("Ingrese el ID del bovino: ");
-    scanf("%d", &b->id);
+    scanf("%d", &data->bovineId);
 
     printf("Ingrese el peso del bovino: ");
-    scanf("%f", &b->weight);
+    scanf("%f", &data->weight);
 
     printf("Ingrese la finca del bovino: ");
-    scanf(" %49[^\n]", b->estate);   // ← permite espacios
+    scanf(" %49[^\n]", data->estate);
 
     pthread_t hilo;
-    pthread_create(&hilo, NULL, saveBovine, b);
+    pthread_create(&hilo, NULL, saveBovine, data);
     pthread_detach(hilo);
 
-    printf("Puedes seleccionar otra opcion\n");
+    printf("Bovino registrado. Puedes seleccionar otra opcion\n");
 }
 
 void createBuyer() {
-
-    Buyer* b = malloc(sizeof(Buyer));
+    BuyerArgs* data = malloc(sizeof(BuyerArgs));
 
     printf("Ingrese el ID del comprador: ");
-    scanf("%d", &b->id);
+    scanf("%d", &data->buyerId);
 
     printf("Ingrese el nombre del comprador: ");
-    scanf(" %49[^\n]", b->name); 
+    scanf(" %49[^\n]", data->name);
 
     pthread_t hilo;
-    pthread_create(&hilo, NULL, saveBuyer, b);
+    pthread_create(&hilo, NULL, saveBuyer, data);
     pthread_detach(hilo);
 
-    printf("Puedes seleccionar otra opcion\n");
+    printf("Comprador registrado. Puedes seleccionar otra opcion\n");
 }
 
 void* savePurchase(void* args) {
-    Purchase *p = (Purchase*)args;
-    writePurchase("purchases.dat", p);
-    free(p);
+    PurchaseArgs *data = (PurchaseArgs*)args;
+    dataSavePurchaseAsync(data->bovineId, data->buyerId, data->pricePerKilo);
+    free(data);
     return NULL;
 }
 
 void createPurchase() {
-    Purchase* p = malloc(sizeof(Purchase));
+    PurchaseArgs* data = malloc(sizeof(PurchaseArgs));
 
     printf("Ingrese el ID del bovino: ");
-    scanf("%d", &p->bovineId);
+    scanf("%d", &data->bovineId);
 
     printf("Ingrese el ID del comprador: ");
-    scanf("%d", &p->buyerId);
+    scanf("%d", &data->buyerId);
 
     printf("Ingrese el precio por kilo: $");
-    scanf("%f", &p->pricePerKilo);
+    scanf("%f", &data->pricePerKilo);
 
     pthread_t hilo;
-    pthread_create(&hilo, NULL, savePurchase, p);
+    pthread_create(&hilo, NULL, savePurchase, data);
     pthread_detach(hilo);
 
     printf("Compra registrada. Puedes seleccionar otra opcion\n");
@@ -96,31 +107,9 @@ void createPurchase() {
 
 void* calculatePrice(void* args) {
     EstimatePriceArgs *data = (EstimatePriceArgs*)args;
-    Bovine b;
+    float totalPrice;
     
-    // Buscar el bovino específico por ID
-    if (searchBovine("bovines.dat", data->bovineId, &b)) {
-        // Calcular precio total
-        float totalPrice = b.weight * data->pricePerKilo;
-        
-        // Crear registro de subasta
-        AuctionRecord auction;
-        auction.bovineId = data->bovineId;
-        auction.buyerId = data->buyerId;
-        auction.totalPrice = totalPrice;
-        
-        // Guardar en Subasta.dat
-        if (writeAuction("Subasta.dat", &auction)) {
-            printf("\nPrecio estimado guardado exitosamente!\n");
-            printf("Bovino: %d | Peso: %.2f kg | Precio/kg: $%.2f\n", 
-                   b.id, b.weight, data->pricePerKilo);
-            printf("Precio Total: $%.2f\n\n", totalPrice);
-        } else {
-            printf("Error al guardar en Subasta.dat\n");
-        }
-    } else {
-        printf("Bovino ID %d no encontrado en bovines.dat\n", data->bovineId);
-    }
+    dataCalculateAuction(data->bovineId, data->buyerId, data->pricePerKilo, &totalPrice);
     
     free(data);
     return NULL;
@@ -147,7 +136,7 @@ void estimatePrice() {
 
 void* generateReport(void* args) {
     int *buyerId = (int*)args;
-    readAuctionsByBuyer("Subasta.dat", *buyerId);
+    dataReportByBuyer(*buyerId);
     free(buyerId);
     return NULL;
 }
@@ -160,12 +149,15 @@ void reportBuyerPurchases() {
     
     pthread_t hilo;
     pthread_create(&hilo, NULL, generateReport, buyerId);
-    pthread_join(hilo, NULL);  // Esperar a que termine para mostrar el reporte
+    pthread_join(hilo, NULL);
     
     printf("Puedes seleccionar otra opcion\n");
 }
 
-void initController() {
+// Hilo maestro que coordina todo el sistema
+void* controllerMaster(void* args) {
+    dataInit();
+    
     uiPrint("Bienvenido al sistema de subasta ganadera");
     int option;
     
@@ -197,7 +189,8 @@ void initController() {
                 break;
             case 6:
                 uiPrint("Saliendo del sistema...");
-                return;
+                dataStop();
+                return NULL;
             default:
                 uiPrint("Opcion no valida, intente de nuevo.");
         }
