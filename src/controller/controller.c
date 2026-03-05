@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include "controller.h"
+#include "guiController.h"
 #include "../data/dataManager.h"
-#include "../view/ui.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
-// Estructura para pasar argumentos al hilo
 typedef struct {
     int bovineId;
     float weight;
@@ -44,65 +44,18 @@ void* saveBuyer(void* args) {
     return NULL;
 }
 
-void createBovine() {
-    BovineArgs* data = malloc(sizeof(BovineArgs));
-
-    printf("Ingrese el ID del bovino: ");
-    scanf("%d", &data->bovineId);
-
-    printf("Ingrese el peso del bovino: ");
-    scanf("%f", &data->weight);
-
-    printf("Ingrese la finca del bovino: ");
-    scanf(" %49[^\n]", data->estate);
-
-    pthread_t hilo;
-    pthread_create(&hilo, NULL, saveBovine, data);
-    pthread_detach(hilo);
-
-    printf("Bovino registrado. Puedes seleccionar otra opcion\n");
-}
-
-void createBuyer() {
-    BuyerArgs* data = malloc(sizeof(BuyerArgs));
-
-    printf("Ingrese el ID del comprador: ");
-    scanf("%d", &data->buyerId);
-
-    printf("Ingrese el nombre del comprador: ");
-    scanf(" %49[^\n]", data->name);
-
-    pthread_t hilo;
-    pthread_create(&hilo, NULL, saveBuyer, data);
-    pthread_detach(hilo);
-
-    printf("Comprador registrado. Puedes seleccionar otra opcion\n");
-}
-
 void* savePurchase(void* args) {
     PurchaseArgs *data = (PurchaseArgs*)args;
+    
+    // Guardar la compra
     dataSavePurchaseAsync(data->bovineId, data->buyerId, data->pricePerKilo);
+    
+    // Calcular y guardar el precio total en Subasta.dat
+    float totalPrice;
+    dataCalculateAuction(data->bovineId, data->buyerId, data->pricePerKilo, &totalPrice);
+    
     free(data);
     return NULL;
-}
-
-void createPurchase() {
-    PurchaseArgs* data = malloc(sizeof(PurchaseArgs));
-
-    printf("Ingrese el ID del bovino: ");
-    scanf("%d", &data->bovineId);
-
-    printf("Ingrese el ID del comprador: ");
-    scanf("%d", &data->buyerId);
-
-    printf("Ingrese el precio por kilo: $");
-    scanf("%f", &data->pricePerKilo);
-
-    pthread_t hilo;
-    pthread_create(&hilo, NULL, savePurchase, data);
-    pthread_detach(hilo);
-
-    printf("Compra registrada. Puedes seleccionar otra opcion\n");
 }
 
 void* calculatePrice(void* args) {
@@ -115,25 +68,6 @@ void* calculatePrice(void* args) {
     return NULL;
 }
 
-void estimatePrice() {
-    EstimatePriceArgs *data = malloc(sizeof(EstimatePriceArgs));
-    
-    printf("Ingrese el ID del bovino: ");
-    scanf("%d", &data->bovineId);
-    
-    printf("Ingrese el ID del comprador: ");
-    scanf("%d", &data->buyerId);
-    
-    printf("Ingrese el precio por kilo: $");
-    scanf("%f", &data->pricePerKilo);
-    
-    pthread_t hilo;
-    pthread_create(&hilo, NULL, calculatePrice, data);
-    pthread_detach(hilo);
-    
-    printf("Calculando precio... Puedes seleccionar otra opcion\n");
-}
-
 void* generateReport(void* args) {
     int *buyerId = (int*)args;
     dataReportByBuyer(*buyerId);
@@ -141,58 +75,115 @@ void* generateReport(void* args) {
     return NULL;
 }
 
-void reportBuyerPurchases() {
-    int *buyerId = malloc(sizeof(int));
-    
-    printf("Ingrese el ID del comprador: ");
-    scanf("%d", buyerId);
-    
-    pthread_t hilo;
-    pthread_create(&hilo, NULL, generateReport, buyerId);
-    pthread_join(hilo, NULL);
-    
-    printf("Puedes seleccionar otra opcion\n");
-}
-
-// Hilo maestro que coordina todo el sistema
 void* controllerMaster(void* args) {
     dataInit();
     
-    uiPrint("Bienvenido al sistema de subasta ganadera");
+    guiShowWelcome();
     int option;
     
-    while(true){
-        uiPrint("\n=== MENU PRINCIPAL - SUBASTA GANADERA ===");
-        uiPrint("1. Registrar bovino");
-        uiPrint("2. Registrar comprador");
-        uiPrint("3. Registrar compra");
-        uiPrint("4. Estimar precio de compra");
-        uiPrint("5. Reporte de compras por comprador");
-        uiPrint("6. Salir");
-        scanf("%d", &option);
+    while(true) {
+        // Mostrar menú y obtener opción
+        option = guiShowMainMenu();
 
         switch(option) {
-            case 1:
-                createBovine();
+            case 1: {
+                // Registrar bovino
+                GuiBovineInput bovineInput;
+                if (guiInputBovine(&bovineInput)) {
+                    BovineArgs* data = malloc(sizeof(BovineArgs));
+                    data->bovineId = bovineInput.id;
+                    data->weight = bovineInput.weight;
+                    strncpy(data->estate, bovineInput.estate, 49);
+                    data->estate[49] = '\0';
+                    
+                    pthread_t hilo;
+                    pthread_create(&hilo, NULL, saveBovine, data);
+                    pthread_detach(hilo);
+                    
+                    guiShowBovineSuccess();
+                }
                 break;
-            case 2:
-                createBuyer();
+            }
+            
+            case 2: {
+                // Registrar comprador
+                GuiBuyerInput buyerInput;
+                if (guiInputBuyer(&buyerInput)) {
+                    BuyerArgs* data = malloc(sizeof(BuyerArgs));
+                    data->buyerId = buyerInput.id;
+                    strncpy(data->name, buyerInput.name, 49);
+                    data->name[49] = '\0';
+                    
+                    pthread_t hilo;
+                    pthread_create(&hilo, NULL, saveBuyer, data);
+                    pthread_detach(hilo);
+                    
+                    guiShowBuyerSuccess();
+                }
                 break;
-            case 3:
-                createPurchase();
+            }
+            
+            case 3: {
+                // Registrar compra
+                GuiPurchaseInput purchaseInput;
+                if (guiInputPurchase(&purchaseInput)) {
+                    PurchaseArgs* data = malloc(sizeof(PurchaseArgs));
+                    data->bovineId = purchaseInput.bovineId;
+                    data->buyerId = purchaseInput.buyerId;
+                    data->pricePerKilo = purchaseInput.pricePerKilo;
+                    
+                    pthread_t hilo;
+                    pthread_create(&hilo, NULL, savePurchase, data);
+                    pthread_join(hilo, NULL);
+                    
+                    guiShowPurchaseSuccess();
+                }
                 break;
-            case 4:
-                estimatePrice();
+            }
+            
+            case 4: {
+                // Estimar precio
+                GuiEstimatePriceInput estimateInput;
+                if (guiInputEstimatePrice(&estimateInput)) {
+                    EstimatePriceArgs *data = malloc(sizeof(EstimatePriceArgs));
+                    data->bovineId = estimateInput.bovineId;
+                    data->pricePerKilo = estimateInput.pricePerKilo;
+                    data->buyerId = -1;  // Placeholder, no se usa
+                    
+                    pthread_t hilo;
+                    pthread_create(&hilo, NULL, calculatePrice, data);
+                    pthread_detach(hilo);
+                    
+                    guiShowEstimatePriceProcessing();
+                }
                 break;
-            case 5:
-                reportBuyerPurchases();
+            }
+            
+            case 5: {
+                // Reporte por comprador
+                int buyerId;
+                if (guiInputReportBuyer(&buyerId)) {
+                    int *data = malloc(sizeof(int));
+                    *data = buyerId;
+                    
+                    pthread_t hilo;
+                    pthread_create(&hilo, NULL, generateReport, data);
+                    pthread_join(hilo, NULL);
+                    
+                    guiShowReportFeedback();
+                }
                 break;
-            case 6:
-                uiPrint("Saliendo del sistema...");
+            }
+            
+            case 6: {
+                // Salir
+                guiShowExiting();
                 dataStop();
                 return NULL;
+            }
+            
             default:
-                uiPrint("Opcion no valida, intente de nuevo.");
+                guiShowInvalidOption();
         }
     }
 }

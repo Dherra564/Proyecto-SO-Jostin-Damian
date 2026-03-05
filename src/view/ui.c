@@ -15,6 +15,14 @@ int uiReadInt(const char *message) {
     return value;
 }
 
+float uiReadFloat(const char *message) {
+    float value;
+    printf("%s", message);
+    scanf("%f", &value);
+    clearBuffer();
+    return value;
+}
+
 void uiReadString(const char *message, char *buffer, int size) {
     printf("%s", message);
     fgets(buffer, size, stdin);
