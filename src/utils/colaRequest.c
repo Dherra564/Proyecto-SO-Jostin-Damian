@@ -1,4 +1,4 @@
-#include "ColaRequest.h"
+#include "colaRequest.h"
 #include <stdlib.h>
 
 void colaInit(ColaRequest *cola) {

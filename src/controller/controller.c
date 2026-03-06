@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Structs para pasar argumentos a los hilos
 typedef struct {
     int bovineId;
     float weight;
@@ -26,68 +27,90 @@ typedef struct {
 
 typedef struct {
     int bovineId;
-    int buyerId;
     float pricePerKilo;
 } EstimatePriceArgs;
 
-void* saveBovine(void* args) {
+// HILO 1: Registrar bovino
+void* threadSaveBovine(void* args) {
     BovineArgs *data = (BovineArgs*)args;
-    dataSaveBovineAsync(data->bovineId, data->weight, data->estate);
+    dataSaveBovine(data->bovineId, data->weight, data->estate);
     free(data);
     return NULL;
 }
 
-void* saveBuyer(void* args) {
+// HILO 2: Registrar comprador
+void* threadSaveBuyer(void* args) {
     BuyerArgs *data = (BuyerArgs*)args;
-    dataSaveBuyerAsync(data->buyerId, data->name);
+    dataSaveBuyer(data->buyerId, data->name);
     free(data);
     return NULL;
 }
 
-void* savePurchase(void* args) {
+// HILO 3: Registrar compra
+void* threadSavePurchase(void* args) {
     PurchaseArgs *data = (PurchaseArgs*)args;
     
-    // Guardar la compra
-    dataSavePurchaseAsync(data->bovineId, data->buyerId, data->pricePerKilo);
+    // Guardar compra en Compras.dat
+    dataSavePurchase(data->bovineId, data->buyerId, data->pricePerKilo);
     
-    // Calcular y guardar el precio total en Subasta.dat
-    float totalPrice;
-    dataCalculateAuction(data->bovineId, data->buyerId, data->pricePerKilo, &totalPrice);
+    // Buscar bovino, calcular y guardar en Subasta.dat
+    Bovine bovine;
+    if (dataSearchBovine(data->bovineId, &bovine)) {
+        float totalPrice = bovine.weight * data->pricePerKilo;
+        dataSaveAuction(data->bovineId, data->buyerId, totalPrice);
+        
+        printf("\n=== COMPRA REGISTRADA ===\n");
+        printf("Bovino: %d | Peso: %.2f kg | Precio/kg: $%.2f\n", 
+               bovine.id, bovine.weight, data->pricePerKilo);
+        printf("Precio Total: $%.2f\n\n", totalPrice);
+    } else {
+        printf("Error: Bovino ID %d no encontrado.\n", data->bovineId);
+    }
     
     free(data);
     return NULL;
 }
 
-void* calculatePrice(void* args) {
+// HILO 4: Estimar precio
+void* threadCalculatePrice(void* args) {
     EstimatePriceArgs *data = (EstimatePriceArgs*)args;
-    float totalPrice;
     
-    dataCalculateAuction(data->bovineId, data->buyerId, data->pricePerKilo, &totalPrice);
+    // Buscar bovino y calcular precio
+    Bovine bovine;
+    if (dataSearchBovine(data->bovineId, &bovine)) {
+        float totalPrice = bovine.weight * data->pricePerKilo;
+        dataSaveAuction(data->bovineId, -1, totalPrice);
+        
+        printf("\n=== ESTIMACIÓN DE PRECIO ===\n");
+        printf("Bovino: %d | Peso: %.2f kg | Precio/kg: $%.2f\n", 
+               bovine.id, bovine.weight, data->pricePerKilo);
+        printf("Precio Total Estimado: $%.2f\n\n", totalPrice);
+    } else {
+        printf("Error: Bovino ID %d no encontrado.\n", data->bovineId);
+    }
     
     free(data);
     return NULL;
 }
 
-void* generateReport(void* args) {
+// HILO 5: Generar reporte por comprador
+void* threadGenerateReport(void* args) {
     int *buyerId = (int*)args;
-    dataReportByBuyer(*buyerId);
+    dataReadAuctionsByBuyer(*buyerId);
     free(buyerId);
     return NULL;
 }
 
 void* controllerMaster(void* args) {
-    dataInit();
-    
     guiShowWelcome();
     int option;
     
     while(true) {
-        // Mostrar menú y obtener opción
         option = guiShowMainMenu();
 
         switch(option) {
             case 1: {
-                // Registrar bovino
+                // HILO 1: Registrar bovino
                 GuiBovineInput bovineInput;
                 if (guiInputBovine(&bovineInput)) {
                     BovineArgs* data = malloc(sizeof(BovineArgs));
@@ -97,7 +120,7 @@ void* controllerMaster(void* args) {
                     data->estate[49] = '\0';
                     
                     pthread_t hilo;
-                    pthread_create(&hilo, NULL, saveBovine, data);
+                    pthread_create(&hilo, NULL, threadSaveBovine, data);
                     pthread_detach(hilo);
                     
                     guiShowBovineSuccess();
@@ -106,7 +129,7 @@ void* controllerMaster(void* args) {
             }
             
             case 2: {
-                // Registrar comprador
+                // HILO 2: Registrar comprador
                 GuiBuyerInput buyerInput;
                 if (guiInputBuyer(&buyerInput)) {
                     BuyerArgs* data = malloc(sizeof(BuyerArgs));
@@ -115,7 +138,7 @@ void* controllerMaster(void* args) {
                     data->name[49] = '\0';
                     
                     pthread_t hilo;
-                    pthread_create(&hilo, NULL, saveBuyer, data);
+                    pthread_create(&hilo, NULL, threadSaveBuyer, data);
                     pthread_detach(hilo);
                     
                     guiShowBuyerSuccess();
@@ -124,7 +147,7 @@ void* controllerMaster(void* args) {
             }
             
             case 3: {
-                // Registrar compra
+                // HILO 3: Registrar compra
                 GuiPurchaseInput purchaseInput;
                 if (guiInputPurchase(&purchaseInput)) {
                     PurchaseArgs* data = malloc(sizeof(PurchaseArgs));
@@ -133,7 +156,7 @@ void* controllerMaster(void* args) {
                     data->pricePerKilo = purchaseInput.pricePerKilo;
                     
                     pthread_t hilo;
-                    pthread_create(&hilo, NULL, savePurchase, data);
+                    pthread_create(&hilo, NULL, threadSavePurchase, data);
                     pthread_join(hilo, NULL);
                     
                     guiShowPurchaseSuccess();
@@ -142,16 +165,15 @@ void* controllerMaster(void* args) {
             }
             
             case 4: {
-                // Estimar precio
+                // HILO 4: Estimar precio
                 GuiEstimatePriceInput estimateInput;
                 if (guiInputEstimatePrice(&estimateInput)) {
                     EstimatePriceArgs *data = malloc(sizeof(EstimatePriceArgs));
                     data->bovineId = estimateInput.bovineId;
                     data->pricePerKilo = estimateInput.pricePerKilo;
-                    data->buyerId = -1;  // Placeholder, no se usa
                     
                     pthread_t hilo;
-                    pthread_create(&hilo, NULL, calculatePrice, data);
+                    pthread_create(&hilo, NULL, threadCalculatePrice, data);
                     pthread_detach(hilo);
                     
                     guiShowEstimatePriceProcessing();
@@ -160,14 +182,14 @@ void* controllerMaster(void* args) {
             }
             
             case 5: {
-                // Reporte por comprador
+                // HILO 5: Reporte por comprador
                 int buyerId;
                 if (guiInputReportBuyer(&buyerId)) {
                     int *data = malloc(sizeof(int));
                     *data = buyerId;
                     
                     pthread_t hilo;
-                    pthread_create(&hilo, NULL, generateReport, data);
+                    pthread_create(&hilo, NULL, threadGenerateReport, data);
                     pthread_join(hilo, NULL);
                     
                     guiShowReportFeedback();
@@ -178,7 +200,6 @@ void* controllerMaster(void* args) {
             case 6: {
                 // Salir
                 guiShowExiting();
-                dataStop();
                 return NULL;
             }
             
