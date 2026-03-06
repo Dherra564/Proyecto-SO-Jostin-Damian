@@ -98,31 +98,4 @@ int dataReadAuctionsByBuyer(int buyerId) {
     
     return count;
 }
-}
 
-int dataReportByBuyer(int buyerId) {
-    DataRequest *req = malloc(sizeof(DataRequest));
-    req->op = OP_REPORT_BY_BUYER;
-    req->buyerId = buyerId;
-    req->done = 0;
-    
-    pthread_mutex_init(&req->doneMutex, NULL);
-    pthread_cond_init(&req->doneCond, NULL);
-    
-    colaEnqueue(&cola, req);
-    
-    // Esperar resultado
-    pthread_mutex_lock(&req->doneMutex);
-    while (!req->done) {
-        pthread_cond_wait(&req->doneCond, &req->doneMutex);
-    }
-    pthread_mutex_unlock(&req->doneMutex);
-    
-    int result = req->result;
-    
-    pthread_mutex_destroy(&req->doneMutex);
-    pthread_cond_destroy(&req->doneCond);
-    free(req);
-    
-    return result;
-}

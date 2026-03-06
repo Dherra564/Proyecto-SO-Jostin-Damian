@@ -53,6 +53,7 @@ int guiInputEstimatePrice(GuiEstimatePriceInput *data) {
     if (!data) return 0;
     
     data->bovineId = uiReadInt("Ingrese el ID del bovino: ");
+    data->buyerId = uiReadInt("Ingrese el ID del comprador: ");
     data->pricePerKilo = uiReadFloat("Ingrese el precio por kilo: $");
     
     return 1;

@@ -27,6 +27,7 @@ typedef struct {
 
 typedef struct {
     int bovineId;
+    int buyerId;
     float pricePerKilo;
 } EstimatePriceArgs;
 
@@ -49,23 +50,12 @@ void* threadSaveBuyer(void* args) {
 // HILO 3: Registrar compra
 void* threadSavePurchase(void* args) {
     PurchaseArgs *data = (PurchaseArgs*)args;
-    
-    // Guardar compra en Compras.dat
+
     dataSavePurchase(data->bovineId, data->buyerId, data->pricePerKilo);
-    
-    // Buscar bovino, calcular y guardar en Subasta.dat
-    Bovine bovine;
-    if (dataSearchBovine(data->bovineId, &bovine)) {
-        float totalPrice = bovine.weight * data->pricePerKilo;
-        dataSaveAuction(data->bovineId, data->buyerId, totalPrice);
-        
-        printf("\n=== COMPRA REGISTRADA ===\n");
-        printf("Bovino: %d | Peso: %.2f kg | Precio/kg: $%.2f\n", 
-               bovine.id, bovine.weight, data->pricePerKilo);
-        printf("Precio Total: $%.2f\n\n", totalPrice);
-    } else {
-        printf("Error: Bovino ID %d no encontrado.\n", data->bovineId);
-    }
+
+    printf("\n=== COMPRA REGISTRADA ===\n");
+    printf("Bovino: %d | Comprador: %d | Precio/kg: $%.2f\n\n",
+           data->bovineId, data->buyerId, data->pricePerKilo);
     
     free(data);
     return NULL;
@@ -79,7 +69,7 @@ void* threadCalculatePrice(void* args) {
     Bovine bovine;
     if (dataSearchBovine(data->bovineId, &bovine)) {
         float totalPrice = bovine.weight * data->pricePerKilo;
-        dataSaveAuction(data->bovineId, -1, totalPrice);
+        dataSaveAuction(data->bovineId, data->buyerId, totalPrice);
         
         printf("\n=== ESTIMACIÓN DE PRECIO ===\n");
         printf("Bovino: %d | Peso: %.2f kg | Precio/kg: $%.2f\n", 
@@ -170,6 +160,7 @@ void* controllerMaster(void* args) {
                 if (guiInputEstimatePrice(&estimateInput)) {
                     EstimatePriceArgs *data = malloc(sizeof(EstimatePriceArgs));
                     data->bovineId = estimateInput.bovineId;
+                    data->buyerId = estimateInput.buyerId;
                     data->pricePerKilo = estimateInput.pricePerKilo;
                     
                     pthread_t hilo;

@@ -20,6 +20,7 @@ typedef struct {
 
 typedef struct {
     int bovineId;
+    int buyerId;
     float pricePerKilo;
 } GuiEstimatePriceInput;
 
