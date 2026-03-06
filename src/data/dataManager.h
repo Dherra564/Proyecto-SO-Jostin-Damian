@@ -1,10 +1,6 @@
 #ifndef DATA_MANAGER_H
 #define DATA_MANAGER_H
 
-#include "../model/bovine.h"
-#include "../model/buyer.h"
-#include "../model/purchase.h"
-
 void dataInit(void);
 void dataStop(void);
 

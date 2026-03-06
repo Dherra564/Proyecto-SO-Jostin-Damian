@@ -2,8 +2,6 @@
 #define COLA_REQUEST_H
 
 #include <pthread.h>
-#include "../bovine.h"
-#include "../buyer.h"
 
 typedef enum {
     OP_SAVE_BOVINE,

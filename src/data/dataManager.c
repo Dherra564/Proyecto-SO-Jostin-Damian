@@ -1,9 +1,16 @@
 #include "dataManager.h"
-#include "../model/list/ColaRequest.h"
+#include "../utils/ColaRequest.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+
+// Definición local del struct Bovine
+typedef struct {
+    int id;
+    float weight;
+    char estate[50];
+} Bovine;
 
 static ColaRequest cola;
 static pthread_t workerThread;
